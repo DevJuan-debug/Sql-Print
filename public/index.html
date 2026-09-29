@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MerFresh · Diseñador de bases de datos</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f46e5'/%3E%3Crect x='6' y='7' width='9' height='8' rx='2' fill='white'/%3E%3Crect x='17' y='17' width='9' height='8' rx='2' fill='white'/%3E%3Cpath d='M15 11h4v6' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/er.css">
+  <link rel="stylesheet" href="/css/board.css">
+  <link rel="stylesheet" href="/css/sequence.css">
+  <link rel="stylesheet" href="/css/history.css">
+</head>
+<body data-screen="loading">
+  <!-- ================= Pantallas fuera del editor ================= -->
+
+  <section class="screen" id="loadingScreen" aria-live="polite">
+    <div class="loading">
+      <span class="spinner" aria-hidden="true"></span>
+      <span id="loadingText">Cargando…</span>
+    </div>
+  </section>
+
+  <section class="screen" id="setupScreen">
+    <div class="card wide">
+      <div class="card-brand">
+        <span class="logo" aria-hidden="true"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="currentColor"/><rect x="6" y="7" width="9" height="8" rx="2" fill="#fff"/><rect x="17" y="17" width="9" height="8" rx="2" fill="#fff"/><path d="M15 11h4v6" stroke="#fff" stroke-width="2" fill="none"/></svg></span>
+        <span>MerFresh</span>
+      </div>
+      <h1>Conecta MerFresh con Supabase</h1>
+      <p class="muted">La app guarda los diagramas, las cuentas y la colaboración en tiempo real en tu proyecto de Supabase.</p>
+      <p class="setup-problem" id="setupProblem" hidden></p>
+      <ol class="steps">
+        <li>Crea un proyecto gratuito en <strong>supabase.com</strong>.</li>
+        <li>En <strong>SQL Editor</strong>, pega el contenido de <code>supabase/schema.sql</code> y pulsa <strong>Run</strong>.</li>
+        <li>En <strong>Authentication → URL Configuration</strong>, pon esta dirección como <em>Site URL</em> y agrega <code>/**</code> al final en <em>Redirect URLs</em>.</li>
+        <li>Copia <code>.env.example</code> como <code>.env</code> y completa <code>SUPABASE_URL</code> y <code>SUPABASE_ANON_KEY</code> (Project Settings → API).</li>
+        <li>Reinicia el servidor con <code>npm start</code> y recarga esta página.</li>
+      </ol>
+      <p class="muted small">Los pasos detallados están en el README del proyecto.</p>
+    </div>
+  </section>
+
+  <section class="screen" id="schemaScreen">
+    <div class="card wide">
+      <div class="card-brand">
+        <span class="logo" aria-hidden="true"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="currentColor"/><rect x="6" y="7" width="9" height="8" rx="2" fill="#fff"/><rect x="17" y="17" width="9" height="8" rx="2" fill="#fff"/><path d="M15 11h4v6" stroke="#fff" stroke-width="2" fill="none"/></svg></span>
+        <span>MerFresh</span>
+      </div>
+      <h1>Falta preparar la base de datos</h1>
+      <p class="muted">Tu cuenta ya funciona, pero tu proyecto de Supabase todavía no tiene las tablas de MerFresh, o tiene una versión anterior. Se instalan (o actualizan) ejecutando el script completo; repetirlo es seguro y no borra tus proyectos:</p>
+      <ol class="steps">
+        <li>Pulsa <strong>Copiar SQL</strong>.</li>
+        <li>Abre el <strong>SQL Editor</strong> de Supabase, pega el contenido (<kbd>Ctrl</kbd>+<kbd>V</kbd>) y pulsa <strong>Run</strong>.</li>
+        <li>Vuelve aquí y pulsa <strong>Ya lo ejecuté</strong>.</li>
+      </ol>
+      <div class="card-actions">
+        <button class="btn" id="btnCopySchema">Copiar SQL</button>
+        <a class="btn" id="linkSqlEditor" target="_blank" rel="noopener">Abrir SQL Editor</a>
+        <button class="btn primary" id="btnSchemaRetry">Ya lo ejecuté</button>
+      </div>
+      <p class="muted small" id="schemaDetail"></p>
+      <div><button type="button" class="link" id="btnSchemaSignOut">Cerrar sesión</button></div>
+    </div>
+  </section>
+
+  <section class="screen" id="authScreen">
+    <div class="card">
+      <div class="card-brand">
+        <span class="logo" aria-hidden="true"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="currentColor"/><rect x="6" y="7" width="9" height="8" rx="2" fill="#fff"/><rect x="17" y="17" width="9" height="8" rx="2" fill="#fff"/><path d="M15 11h4v6" stroke="#fff" stroke-width="2" fill="none"/></svg></span>
+        <span>MerFresh</span>
+      </div>
+      <p class="auth-invite" id="authInvite" hidden>Te invitaron a colaborar en un diagrama. Inicia sesión o crea una cuenta para unirte.</p>
+      <div class="auth-tabs" role="tablist">
+        <button type="button" data-mode="signin" class="on">Iniciar sesión</button>
+        <button type="button" data-mode="signup">Crear cuenta</button>
+      </div>
+      <h1 id="authTitle">Inicia sesión</h1>
+      <form id="authForm" class="auth-form" novalidate>
+        <label class="field" data-show="signup">Nombre
+          <input class="in" name="name" autocomplete="name" maxlength="60" placeholder="Cómo te verán tus colaboradores">
+        </label>
+        <label class="field" data-show="signin signup magic forgot">Correo electrónico
+          <input class="in" name="email" type="email" autocomplete="email" placeholder="tu@correo.com">
+        </label>
+        <label class="field" data-show="signin signup reset">Contraseña
+          <input class="in" name="password" type="password" minlength="6" placeholder="Mínimo 6 caracteres">
+        </label>
+        <p class="auth-msg" id="authMsg" role="status"></p>
+        <button class="btn primary block" id="authSubmit">Entrar</button>
+      </form>
+      <div class="auth-links">
+        <button type="button" class="link" data-mode="magic">Entrar con un enlace por correo</button>
+        <button type="button" class="link" data-mode="forgot">¿Olvidaste tu contraseña?</button>
+        <button type="button" class="link" data-mode="signin">Volver a iniciar sesión</button>
+      </div>
+      <div id="authProviders" hidden>
+        <div class="or"><span>o</span></div>
+        <div id="authProviderButtons" class="provider-buttons"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="messageScreen">
+    <div class="card">
+      <h1 id="msgTitle"></h1>
+      <p class="muted" id="msgText"></p>
+      <div class="card-actions">
+        <button class="btn primary" id="msgPrimary">Ir a mis proyectos</button>
+        <button class="btn" id="msgSignOut">Cerrar sesión</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Editor ================= -->
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="currentColor"/><rect x="6" y="7" width="9" height="8" rx="2" fill="#fff"/><rect x="17" y="17" width="9" height="8" rx="2" fill="#fff"/><path d="M15 11h4v6" stroke="#fff" stroke-width="2" fill="none"/></svg>
+      </span>
+      <span class="brand-name">MerFresh</span>
+    </div>
+    <input id="projectName" class="project-name" spellcheck="false" aria-label="Nombre del proyecto">
+    <span class="role-badge" id="roleBadge" hidden>Solo lectura</span>
+    <span id="saveStatus" class="save-status"></span>
+    <div class="spacer"></div>
+    <div class="peers" id="peers" aria-label="Personas conectadas"></div>
+    <div class="group">
+      <button id="btnUndo" class="icon-btn" title="Deshacer (Ctrl+Z)" aria-label="Deshacer">
+        <svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+      </button>
+      <button id="btnRedo" class="icon-btn" title="Rehacer (Ctrl+Y)" aria-label="Rehacer">
+        <svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>
+      </button>
+    </div>
+    <label class="dialect-pick" title="Notación del diagrama" data-only="er">
+      <svg viewBox="0 0 24 24"><path d="M3 6h7M3 12h4M3 18h7"/><path d="M14 6l3 3 4-6"/><path d="M14 18h7"/></svg>
+      <select id="notation" aria-label="Notación del diagrama">
+        <option value="crowsfoot">Pata de gallo</option>
+        <option value="chen">Chen</option>
+        <option value="uml">UML de clases</option>
+        <option value="idef1x">IDEF1X</option>
+        <option value="minmax">Min-Max</option>
+      </select>
+    </label>
+    <label class="dialect-pick" title="Motor de base de datos" data-only="er">
+      <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
+      <select id="dialect" aria-label="Motor de base de datos"></select>
+    </label>
+    <button id="btnAddTable" class="btn primary" title="Nueva tabla (doble clic en el lienzo)" data-only="er">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Tabla</span>
+    </button>
+    <button id="btnImport" class="btn" title="Importar un script SQL" data-only="er">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span>Importar SQL</span>
+    </button>
+    <button id="btnExport" class="btn accent" title="Exportar como código o imagen">
+      <svg viewBox="0 0 24 24"><path d="m8 7-5 5 5 5"/><path d="m16 7 5 5-5 5"/></svg><span>Exportar</span>
+    </button>
+    <button id="btnHistory" class="btn" title="Historial de versiones y copias de seguridad" aria-label="Historial" aria-controls="historyPanel" aria-expanded="false" disabled>
+      <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg><span>Historial</span>
+    </button>
+    <button id="btnShare" class="btn" title="Invitar colaboradores">
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M19 8v6M16 11h6"/></svg><span>Compartir</span>
+    </button>
+    <button id="btnProjects" class="btn" title="Mis proyectos">
+      <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Proyectos</span>
+    </button>
+    <div class="user-menu">
+      <button id="btnUser" class="avatar avatar-btn" title="Tu cuenta" aria-label="Tu cuenta" aria-haspopup="menu"></button>
+      <div class="menu" id="userMenu" role="menu" hidden>
+        <div class="menu-head">
+          <strong id="userName"></strong>
+          <span id="userEmail"></span>
+        </div>
+        <button role="menuitem" data-act="projects">Mis proyectos</button>
+        <button role="menuitem" data-act="signout">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout" id="layout">
+    <aside class="sidebar">
+      <div class="side-panel" id="erPanel" data-only="er">
+        <div class="sidebar-head">
+          <div class="search">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="tableSearch" placeholder="Buscar tabla…" spellcheck="false">
+          </div>
+        </div>
+        <div id="relationEditor"></div>
+        <div id="tableList" class="table-list"></div>
+      </div>
+      <div class="side-panel board-panel" id="boardPanel" data-only="board"></div>
+    </aside>
+
+    <section class="canvas-wrap">
+      <div class="canvas" id="canvas" tabindex="-1">
+        <div class="world" id="world">
+          <svg class="board-layer" id="boardLayer" width="1" height="1"></svg>
+          <svg class="edges" id="edges" width="1" height="1"></svg>
+          <div id="nodes"></div>
+          <div id="boardOverlay"></div>
+          <div id="cursors" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="empty-hint" id="emptyHint" hidden>
+        <strong>Tu diagrama está vacío</strong>
+        <span>Haz doble clic en el lienzo para crear una tabla, o importa un script SQL existente.</span>
+        <button class="btn primary" id="btnEmptyCreate" hidden>Crear proyecto</button>
+      </div>
+      <div class="canvas-tools">
+        <button class="icon-btn" id="btnZoomOut" title="Alejar" aria-label="Alejar"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+        <button class="zoom-label" id="zoomLabel" title="Restablecer al 100 %">100%</button>
+        <button class="icon-btn" id="btnZoomIn" title="Acercar" aria-label="Acercar"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+        <span class="sep"></span>
+        <button class="icon-btn" id="btnFit" title="Ajustar a la pantalla" aria-label="Ajustar"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+        <button class="icon-btn" id="btnArrange" title="Organizar automáticamente" aria-label="Organizar"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M10 6.5h4M17.5 10v4"/></svg></button>
+      </div>
+      <div class="canvas-help" data-only="er">Arrastra desde el punto de una columna hasta otra columna para crear una relación · Ctrl + rueda para zoom · Supr para eliminar</div>
+      <div class="canvas-help" data-only="board" id="boardHelp">Arrastra desde el borde de una forma hasta otra para conectarlas · Doble clic para editar el texto · Ctrl + rueda para zoom · Supr para eliminar</div>
+    </section>
+
+    <aside class="sqlpanel" id="exportPanel" hidden>
+      <div class="sqlpanel-head">
+        <div>
+          <div class="sqlpanel-title">Exportar</div>
+          <div class="sqlpanel-sub" id="exportSummary"></div>
+        </div>
+        <button class="icon-btn" id="btnCloseExport" title="Cerrar" aria-label="Cerrar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div class="sqlpanel-bar export-image">
+        <span class="export-label">Imagen</span>
+        <button class="btn sm" id="btnDownloadPng">PNG</button>
+        <button class="btn sm" id="btnDownloadSvg">SVG</button>
+      </div>
+      <div class="sqlpanel-bar">
+        <select class="in sm" id="exportFormat" aria-label="Formato de código"></select>
+        <label class="check" id="optDropWrap"><input type="checkbox" id="optDrop"> DROP TABLE</label>
+        <div class="spacer"></div>
+        <button class="btn sm" id="btnCopyCode">Copiar</button>
+        <button class="btn sm accent" id="btnDownloadCode">Descargar</button>
+      </div>
+      <div id="exportWarnings" class="sql-warnings"></div>
+      <pre class="code" id="exportCode"></pre>
+    </aside>
+
+    <aside class="histpanel" id="historyPanel" aria-labelledby="historyTitle" hidden>
+      <div class="sqlpanel-head">
+        <div>
+          <div class="sqlpanel-title" id="historyTitle">Historial</div>
+          <div class="sqlpanel-sub" id="historyStats"></div>
+        </div>
+        <button class="icon-btn" id="btnCloseHistory" title="Cerrar" aria-label="Cerrar historial"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div class="hist-actions">
+        <button type="button" class="btn sm primary" id="btnSaveVersion" aria-controls="saveVersionForm" aria-expanded="false" hidden>
+          <svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Guardar versión…
+        </button>
+        <button type="button" class="btn sm" id="btnDownloadBackup" title="Descarga el diagrama actual; puedes importarlo después desde «Proyectos»">
+          <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Descargar copia (.json)
+        </button>
+      </div>
+      <form class="hist-save" id="saveVersionForm" hidden>
+        <label class="lbl" for="versionLabel">Nombre de la versión</label>
+        <input class="in" id="versionLabel" maxlength="120" autocomplete="off" required placeholder="p. ej. Antes de normalizar pedidos">
+        <div class="hist-save-actions">
+          <button type="button" class="btn sm" id="btnCancelVersion">Cancelar</button>
+          <button class="btn sm primary" id="btnConfirmVersion">Guardar</button>
+        </div>
+      </form>
+      <div class="hist-scroll">
+        <ol class="hist-list" id="historyList" aria-label="Versiones del proyecto"></ol>
+        <div class="hist-more"><button type="button" class="btn sm" id="btnHistoryMore" hidden>Cargar más</button></div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ================= Diálogos ================= -->
+
+  <dialog id="importDialog" class="modal">
+    <form method="dialog" class="modal-box wide" id="importForm">
+      <header class="modal-head">
+        <h2>Importar script SQL</h2>
+        <button class="icon-btn" value="cancel" aria-label="Cerrar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </header>
+      <p class="muted">Pega sentencias <code>CREATE TABLE</code> / <code>ALTER TABLE</code> de MySQL, MariaDB, PostgreSQL, SQL Server, Oracle o SQLite. El diagrama se dibuja automáticamente.</p>
+      <textarea id="importText" class="in code-in" rows="14" spellcheck="false" placeholder="CREATE TABLE clientes (&#10;  id INT PRIMARY KEY AUTO_INCREMENT,&#10;  nombre VARCHAR(100) NOT NULL&#10;);"></textarea>
+      <div class="import-opts">
+        <label class="file-btn btn sm">
+          <input type="file" id="importFile" accept=".sql,.txt,text/plain" hidden>
+          Cargar archivo .sql…
+        </label>
+        <div class="spacer"></div>
+        <label class="radio"><input type="radio" name="importMode" value="replace" checked> Reemplazar diagrama</label>
+        <label class="radio"><input type="radio" name="importMode" value="merge"> Añadir al diagrama</label>
+      </div>
+      <footer class="modal-foot">
+        <button class="btn" value="cancel">Cancelar</button>
+        <button class="btn primary" id="btnDoImport" value="import">Importar y dibujar</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="projectsDialog" class="modal">
+    <div class="modal-box">
+      <header class="modal-head">
+        <h2 id="projectsTitle">Proyectos</h2>
+        <button class="icon-btn" id="btnCloseProjects" aria-label="Cerrar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </header>
+      <p class="muted" id="projectsIntro" hidden>Todavía no tienes proyectos. Ponle nombre y elige el tipo de diagrama; después podrás invitar a tu equipo desde «Compartir».</p>
+      <form class="new-project" id="newProjectForm">
+        <input class="in" id="newProjectName" placeholder="Nombre del nuevo proyecto" required maxlength="120">
+        <select class="in" id="newProjectKind" aria-label="Tipo de diagrama"></select>
+        <select class="in" id="newProjectDialect" aria-label="Motor de base de datos"></select>
+        <button class="btn primary">Crear</button>
+      </form>
+      <div class="sample-row">
+        <button type="button" class="link" id="btnSampleProject">o empieza con un proyecto de ejemplo (tienda con 5 tablas)</button>
+        <span class="sample-sep" aria-hidden="true">·</span>
+        <button type="button" class="link" id="btnImportBackup" title="Crea un proyecto nuevo a partir de una copia descargada desde el historial">Importar copia (.json)</button>
+        <input type="file" id="backupFile" accept=".json,application/json" hidden>
+      </div>
+      <section class="legacy" id="legacySection" hidden>
+        <h3 class="section-title">Proyectos guardados en este equipo</h3>
+        <p class="muted small">Se crearon antes de conectar Supabase. Impórtalos a tu cuenta para seguir editándolos y poder compartirlos.</p>
+        <div id="legacyList" class="project-list"></div>
+      </section>
+      <div id="projectList" class="project-list"></div>
+      <section class="trash" id="trashSection" hidden>
+        <h3 class="section-title">Papelera</h3>
+        <p class="muted small">Solo tú ves estos proyectos. Se eliminan definitivamente, con todo su historial, 30 días después de moverlos aquí.</p>
+        <div id="trashList" class="project-list"></div>
+      </section>
+    </div>
+  </dialog>
+
+  <dialog id="versionDialog" class="modal" aria-labelledby="versionTitle">
+    <div class="modal-box wide version-box">
+      <header class="modal-head">
+        <div class="version-head">
+          <h2 id="versionTitle">Versión</h2>
+          <div class="muted small" id="versionMeta"></div>
+        </div>
+        <button class="icon-btn" id="btnCloseVersion" aria-label="Cerrar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </header>
+      <div class="version-preview" id="versionPreview" aria-live="polite"></div>
+      <div class="version-changes" id="versionChanges"></div>
+      <footer class="modal-foot version-foot">
+        <button type="button" class="btn" id="btnDownloadVersion">Descargar copia (.json)</button>
+        <button type="button" class="btn" id="btnCopyVersion">Crear copia como proyecto nuevo</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn primary" id="btnRestoreVersion">Restaurar esta versión</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <dialog id="shareDialog" class="modal">
+    <div class="modal-box">
+      <header class="modal-head">
+        <h2>Compartir «<span id="shareProjectName"></span>»</h2>
+        <button class="icon-btn" id="btnCloseShare" aria-label="Cerrar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </header>
+      <section id="shareOwner" class="share-owner">
+        <label class="lbl" for="shareLink">Enlace de invitación</label>
+        <div class="share-link">
+          <input class="in" id="shareLink" readonly>
+          <button class="btn primary" id="btnCopyLink">Copiar enlace</button>
+        </div>
+        <div class="share-opts">
+          <label class="share-role">Quien abra el enlace
+            <select class="in" id="shareRole">
+              <option value="editor">puede editar</option>
+              <option value="viewer">solo puede ver</option>
+            </select>
+          </label>
+          <label class="check"><input type="checkbox" id="shareEnabled"> Enlace activo</label>
+          <span class="spacer"></span>
+          <button class="btn sm" id="btnRegenerate">Generar enlace nuevo</button>
+        </div>
+        <p class="muted small">Tus colaboradores deberán iniciar sesión o crear una cuenta al abrirlo. Todos editan a la vez y ven los cambios y cursores de los demás en vivo.</p>
+        <p class="note warn" id="shareLocalWarn" hidden>Estás usando la app en <strong>localhost</strong>: el enlace solo funcionará en este equipo. Para compartir con otras personas publica la app o usa un túnel, y define <code>PUBLIC_URL</code> (ver README).</p>
+      </section>
+      <p class="muted" id="shareMember" hidden>Solo el propietario puede gestionar el enlace de invitación. Si alguien más necesita acceso, pídele que se lo comparta.</p>
+      <h3 class="section-title">Personas con acceso</h3>
+      <div id="memberList" class="member-list"></div>
+      <footer class="modal-foot">
+        <button class="btn danger" id="btnLeave" hidden>Salir del proyecto</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <datalist id="typeList"></datalist>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script src="/vendor/supabase.js"></script>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

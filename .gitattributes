@@ -1,0 +1,4 @@
+# Saltos de línea LF en todos los sistemas (algunas pruebas leen archivos esperando LF).
+* text=auto eol=lf
+*.png binary
+*.ico binary

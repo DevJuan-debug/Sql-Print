@@ -1,0 +1,63 @@
+/* ---------- Diagrama de secuencia ---------- */
+:root {
+  --seq-fill: var(--node-bg);
+  --seq-line: #475569;
+  --seq-life: #9aa3b8;
+  --seq-act: #eef1f7;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --seq-line: #aab3c7;
+    --seq-life: #5d667c;
+    --seq-act: #262b3a;
+  }
+}
+
+/* Puntas de flecha del lienzo (en la exportación llevan colores fijos). */
+#boardLayer #mf-arrow-sq path { fill: var(--seq-line); stroke: none; }
+#boardLayer #mf-open-sq path { stroke: var(--seq-line); }
+#boardLayer #mf-arrow-sqsel path { fill: var(--accent); stroke: none; }
+#boardLayer #mf-open-sqsel path { stroke: var(--accent); }
+
+#boardLayer .sq-part, #boardLayer .sq-note { cursor: grab; }
+#boardLayer.sq-dragging .sq-part, #boardLayer.sq-dragging .sq-note { cursor: grabbing; }
+#boardLayer .sq-msg { cursor: ns-resize; }
+#boardLayer .sq-msg:hover .sq-line { stroke: var(--edge-hl) !important; }
+#boardLayer .sq-life-hit { cursor: crosshair; }
+#boardLayer text { user-select: none; }
+.readonly #boardLayer .sq-part, .readonly #boardLayer .sq-note, .readonly #boardLayer .sq-msg { cursor: pointer; }
+.readonly #boardLayer .sq-life-hit { cursor: default; }
+
+.sq-inline {
+  position: absolute; z-index: 3; margin: 0; padding: 5px 8px;
+  border: 1.5px solid var(--accent); border-radius: 7px; outline: none;
+  background: var(--panel); color: var(--text); box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow);
+  font: 600 13px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  text-align: center; resize: none; overflow: hidden;
+}
+.sq-inline.multi { font-weight: 400; font-size: 12.5px; text-align: left; overflow: auto; }
+
+/* ---------- Barra lateral ---------- */
+.sq-inspector { display: grid; gap: 14px; padding: 14px; align-content: start; }
+.sq-section { display: grid; gap: 8px; }
+.sq-section .section-title { margin: 0; }
+.sq-palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.sq-pal {
+  display: grid; justify-items: center; gap: 3px; padding: 8px 4px 7px;
+  border: 1px solid var(--border); border-radius: 9px; background: var(--panel);
+  color: var(--text); font-size: 11.5px; line-height: 1.2; text-align: center;
+  transition: background .12s, border-color .12s;
+}
+.sq-pal:hover { border-color: var(--accent); background: var(--accent-soft); }
+.sq-pal svg { width: 44px; height: 32px; color: var(--accent); }
+.sq-card {
+  display: grid; gap: 10px; padding: 12px;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel-2);
+}
+.sq-card-title { font-weight: 700; font-size: 13px; }
+.sq-card-title .muted { font-weight: 400; font-size: 12px; }
+.sq-card select.in { height: 30px; padding: 0 6px; }
+.sq-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sq-meta { color: var(--muted); font-size: 12px; }
+.sq-help { margin: 0; padding-left: 18px; display: grid; gap: 5px; color: var(--muted); font-size: 12.5px; }
+.sq-inspector .in:disabled, .sq-inspector .sw:disabled { opacity: .6; cursor: default; }

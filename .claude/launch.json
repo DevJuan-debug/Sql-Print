@@ -1,0 +1,26 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "merfresh",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "start"
+      ],
+      "port": 3001,
+      "env": {
+        "PORT": "3001"
+      },
+      "autoPort": true
+    },
+    {
+      "name": "merfresh-e2e",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "dev/e2e/server.mjs"
+      ],
+      "port": 3100,
+      "autoPort": true
+    }
+  ]
+}

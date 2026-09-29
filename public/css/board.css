@@ -1,0 +1,122 @@
+/* ---------- Pizarras: flujo, clases UML y componentes ---------- */
+
+/* Lienzo. Todo va dentro de .bl-root: la capa #boardLayer la comparte el editor de secuencia. */
+/* app.css da trazo a todos los svg (iconos): aquí cada elemento define el suyo. */
+.bl-root { user-select: none; stroke: none; }
+.bl-root text, .bi-ico text { pointer-events: none; stroke: none; }
+.bl-root .bnode { cursor: grab; }
+.bl-readonly .bnode { cursor: default; }
+.bl-root .bnode.dragging { cursor: grabbing; opacity: .88; filter: drop-shadow(0 8px 14px rgba(16, 24, 40, .18)); }
+.bl-root .hitbox { fill: transparent; stroke: none; }
+.bl-root .halo { fill: none; stroke: transparent; stroke-width: 24; pointer-events: none; }
+.bl-root .bnode:hover .halo { pointer-events: stroke; }
+.bl-root .bnode.editing .btext { visibility: hidden; }
+.bl-root .bnode.t-text:hover .btextbox { stroke: var(--border-strong) !important; stroke-dasharray: 4 3; }
+
+/* Puntos de conexión */
+.bl-root .port {
+  r: calc(5px * var(--ik, 1)); fill: var(--node-bg); stroke: var(--accent); stroke-width: calc(2px * var(--ik, 1));
+  opacity: 0; pointer-events: none; cursor: crosshair; transition: opacity .1s;
+}
+.bl-root .bnode:hover .port { opacity: 1; pointer-events: all; }
+.bl-root .port:hover { fill: var(--accent); r: calc(6.5px * var(--ik, 1)); }
+.bl-root .bnode.dragging .port, .bl-root .bnode.editing .port { opacity: 0; pointer-events: none; }
+.bl-root.bconnecting .bnode .port { opacity: 0; pointer-events: none; }
+.bl-root.bconnecting .bnode.drop .port { opacity: 1; }
+.bl-root .bnode.drop .hitbox { fill: color-mix(in srgb, var(--accent) 8%, transparent); stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 4; }
+.bl-root.bconnecting, .bl-root.bconnecting .bnode { cursor: crosshair; }
+
+/* Selección y tiradores */
+.bl-overlay { pointer-events: none; }
+.bl-root .sel-outline { fill: none; stroke: var(--accent); stroke-width: calc(1.5px * var(--ik, 1)); stroke-dasharray: 5 4; }
+.bl-root .bhandle {
+  r: calc(4.5px * var(--ik, 1)); fill: var(--node-bg); stroke: var(--accent); stroke-width: calc(1.6px * var(--ik, 1));
+  pointer-events: all;
+}
+.bl-root .bhandle:hover { fill: var(--accent); }
+.bl-root .h-nw, .bl-root .h-se { cursor: nwse-resize; }
+.bl-root .h-ne, .bl-root .h-sw { cursor: nesw-resize; }
+.bl-root .h-n, .bl-root .h-s { cursor: ns-resize; }
+.bl-root .h-e, .bl-root .h-w { cursor: ew-resize; }
+.bl-root .rsel { fill: none; stroke-width: 2.5; }
+.bl-root .rsel-tag text { fill: #fff; }
+.bl-root .temp-edge { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 5; fill: none; pointer-events: none; }
+
+/* Conectores */
+.bl-root .bedge .line { fill: none; stroke: var(--muted); stroke-width: 1.6; }
+.bl-root .bedge .hit { fill: none; stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
+.bl-root .bedge:hover .line { stroke: var(--edge-hl); }
+.bl-root .bedge.selected .line { stroke: var(--edge-hl); stroke-width: 2.4; }
+.bl-root .elabel-bg { fill: var(--node-bg); stroke: var(--border); pointer-events: all; cursor: pointer; }
+.bl-root .bedge.selected .elabel-bg { stroke: var(--edge-hl); }
+.bl-root .elabel { fill: var(--text); }
+.bl-root .eend { fill: var(--muted); font-weight: 500; }
+.bl-root .bedge.selected .eend { fill: var(--edge-hl); }
+.bl-root .bedge[data-head="arrow"]:hover .line { marker-end: url(#mf-arrow-h); }
+.bl-root .bedge[data-head="open"]:hover .line { marker-end: url(#mf-open-h); }
+.bl-root .bedge[data-head="triangle"]:hover .line { marker-end: url(#mf-triangle-h); }
+.bl-root .bedge[data-head="diamond"]:hover .line { marker-end: url(#mf-diamond-h); }
+.bl-root .bedge[data-head="filledDiamond"]:hover .line { marker-end: url(#mf-filledDiamond-h); }
+.bl-root .bedge[data-tail="arrow"]:hover .line { marker-start: url(#mf-arrow-h); }
+.bl-root .bedge[data-tail="open"]:hover .line { marker-start: url(#mf-open-h); }
+.bl-root .bedge[data-tail="triangle"]:hover .line { marker-start: url(#mf-triangle-h); }
+.bl-root .bedge[data-tail="diamond"]:hover .line { marker-start: url(#mf-diamond-h); }
+.bl-root .bedge[data-tail="filledDiamond"]:hover .line { marker-start: url(#mf-filledDiamond-h); }
+.bl-root.bconnecting .bedge { pointer-events: none; }
+
+/* Editor de texto en línea (coordenadas del mundo: escala con el zoom) */
+.board-text-editor {
+  position: absolute; z-index: 4; box-sizing: border-box; margin: 0;
+  padding: 4px 6px; resize: none; overflow: hidden;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; line-height: 1.32;
+  color: var(--text); background: var(--node-bg);
+  border: 1.5px solid var(--accent); border-radius: 6px; outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow);
+}
+.board-text-editor.edge { font-weight: 500; }
+
+/* ---------- Barra lateral: paleta y propiedades ---------- */
+.bi { display: grid; gap: 10px; padding: 10px 10px 28px; }
+.bi-section { display: grid; gap: 6px; }
+.bi-title { font-weight: 700; font-size: 13px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.bi-sub { color: var(--faint); font-weight: 400; font-size: 11.5px; }
+.bi-group {
+  margin-top: 4px; font-size: 10.5px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.bi-palette { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.bi-shape {
+  display: grid; justify-items: center; gap: 3px; padding: 7px 4px 6px; min-width: 0;
+  border: 1px solid var(--border); border-radius: 9px; background: var(--panel);
+  color: var(--text); cursor: grab; user-select: none; transition: border-color .12s, background .12s, box-shadow .12s;
+}
+.bi-shape:hover, .bi-shape:focus-visible { border-color: var(--accent); background: var(--accent-soft); box-shadow: var(--shadow-sm); }
+.bi-shape:focus-visible { outline: none; }
+.bi-shape:active { cursor: grabbing; }
+.bi-shape span {
+  font-size: 11px; line-height: 1.2; text-align: center; max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.bi-ico { width: 46px; height: 30px; stroke: none; fill: none; overflow: visible; }
+.bi-ico * { vector-effect: non-scaling-stroke; }
+
+.bi-card {
+  display: grid; gap: 10px; padding: 12px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--panel-2);
+}
+.bi-head { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.bi-head svg { color: var(--accent); }
+.bi-desc { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.bi-desc span { color: var(--faint); margin: 0 3px; }
+.bi-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.bi-grid2 .lbl { align-content: end; }
+.bi-hint { font-size: 11.5px; color: var(--muted); line-height: 1.45; margin-top: -4px; }
+.bi-hint code { font-size: 11px; }
+.bi .in.mono, .bi textarea.mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12px; }
+.bi select.in { padding: 0 6px; }
+.bi .in:disabled { opacity: .7; cursor: default; }
+.bi .sw:disabled { cursor: default; }
+.bi-help { color: var(--muted); font-size: 12.5px; padding: 2px 2px 0; }
+.bi-help ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+.bi-help p { margin: 0; }
+.bi-count { margin-top: 6px; color: var(--faint); font-size: 12px; }

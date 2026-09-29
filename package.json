@@ -1,0 +1,23 @@
+{
+  "name": "merfresh",
+  "version": "1.0.0",
+  "description": "Diseñador colaborativo de bases de datos (diagramas ER) sobre Supabase, con importación y exportación de SQL",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test",
+    "dev:simulado": "node dev/e2e/server.mjs"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8"
+  }
+}
